@@ -1,67 +1,53 @@
 import java.util.*;
 
-public class AStarSolver {
-    // Atın yapabileceği 8 farklı L hareketi (row, col değişimleri)
-    private static final int[] dRow = {-2, -1, 1, 2, 2, 1, -1, -2};
-    private static final int[] dCol = {-1, -2, -2, -1, 1, 2, 2, 1};
+public class AStarSolver implements PathFinder {
 
-    public List<Node> findPath(Board board, Node startNode, Node targetNode) {
-        PriorityQueue<Node> openList = new PriorityQueue<>();
-        HashSet<String> pathList = new HashSet<>(); // Ziyaret edilen düğümler
+    private static final int[] dr = {-2,-1,1,2,2,1,-1,-2};
+    private static final int[] dc = {-1,-2,-2,-1,1,2,2,1};
 
-        startNode.gCost = 0;
-        startNode.hCost = calculateHeuristic(startNode, targetNode);
-        openList.add(startNode);
+    public List<Node> findPath(Board board, Node start, Node goal) {
+        PriorityQueue<Node> open = new PriorityQueue<>();
+        Set<String> visited = new HashSet<>();
 
-        while (!openList.isEmpty()) {
-            Node current = openList.poll(); // En düşük fCost'a sahip node'u al
+        start.gCost = 0;
+        start.hCost = heuristic(start, goal);
+        open.add(start);
 
-            // Hedefe ulaştık mı?
-            if (current.row == targetNode.row && current.col == targetNode.col) {
-                return reconstructPath(current);
-            }
+        while (!open.isEmpty()) {
+            Node cur = open.poll();
 
-            String key = current.row + "," + current.col;
-            if (pathList.contains(key))
-                 continue;
-            pathList.add(key);
+            if (cur.row == goal.row && cur.col == goal.col)
+                return buildPath(cur);
 
-            // Atın 8 olası hareketine bak
+            visited.add(cur.row + "," + cur.col);
+
             for (int i = 0; i < 8; i++) {
-                int newRow = current.row + dRow[i];
-                int newCol = current.col + dCol[i];
+                int nr = cur.row + dr[i];
+                int nc = cur.col + dc[i];
 
-                if (board.isSafe(newRow, newCol)) {
-                    // gCost: Başlangıçtan buraya olan mesafe (Her adım 1 birim)
-                    int tempGCost = current.gCost + 1;
-                    
-                    Node neighbor = new Node(newRow, newCol, current);
-                    neighbor.gCost = tempGCost;
-                    neighbor.hCost = calculateHeuristic(neighbor, targetNode);
-                    
-                    if (!pathList.contains(newRow + "," + newCol)) {
-                        openList.add(neighbor);
-                    }
-                }
+                if (!board.isSafe(nr, nc)) continue;
+
+                if (visited.contains(nr + "," + nc)) continue;
+
+                Node next = new Node(nr, nc, cur);
+                next.gCost = cur.gCost + 1;
+                next.hCost = heuristic(next, goal);
+                open.add(next);
             }
         }
-        return null; // Yol bulunamadı
+        return null;
     }
 
-    // Heuristic: Manhattan Mesafesi (Basit ve etkili)
-    // At için tam doğru değildir ama hedefe yaklaştırır.
-    private int calculateHeuristic(Node a, Node b) {
+    private int heuristic(Node a, Node b) {
         return Math.abs(a.row - b.row) + Math.abs(a.col - b.col);
     }
 
-    // Yolu geriye doğru takip etme
-    private List<Node> reconstructPath(Node current) {
+    private List<Node> buildPath(Node node) {
         List<Node> path = new ArrayList<>();
-        while (current != null) {
-            path.add(current);
-            current = current.parent;
+        while (node != null) {
+            path.add(0, node);
+            node = node.parent;
         }
-        Collections.reverse(path); // Tersten dizildiği için düzeltiyoruz
         return path;
     }
 }
